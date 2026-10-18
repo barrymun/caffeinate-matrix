@@ -1,0 +1,185 @@
+#!/usr/bin/env python3
+"""Run `caffeinate` with a Matrix-style digital rain in the terminal.
+
+The rain is tied to the caffeinate process: while caffeinate is alive the
+rain falls in green; if caffeinate exits for any reason the rain stops and
+the screen turns red, so you can tell at a glance whether it is working.
+
+Usage:
+    ./caffeinate-matrix              # same as `caffeinate -ds`
+    ./caffeinate-matrix -dims        # any caffeinate flags are passed through
+
+Keys: q / Esc / Ctrl-C to quit (this also stops caffeinate).
+"""
+
+import curses
+import locale
+import os
+import random
+import subprocess
+import sys
+import time
+
+DEFAULT_FLAGS = ["-ds"]
+FPS = 20
+CHARS = (
+    "ｱｲｳｴｵｶｷｸｹｺｻｼｽｾｿﾀﾁﾂﾃﾄﾅﾆﾇﾈﾉﾊﾋﾌﾍﾎﾏﾐﾑﾒﾓﾔﾕﾖﾗﾘﾙﾚﾛﾜﾝ"
+    "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ@#$%&*+=<>"
+)
+
+
+def start_caffeinate(flags):
+    # -w ties caffeinate to this process, so it exits even if we are killed
+    # without a chance to clean up.
+    return subprocess.Popen(
+        ["caffeinate", *flags, "-w", str(os.getpid())],
+        stdin=subprocess.DEVNULL,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+    )
+
+
+def format_uptime(seconds):
+    h, rem = divmod(int(seconds), 3600)
+    m, s = divmod(rem, 60)
+    return f"{h:02d}:{m:02d}:{s:02d}"
+
+
+class Drop:
+    """A single falling streak in one column."""
+
+    def __init__(self, height):
+        self.reset(height, initial=True)
+
+    def reset(self, height, initial=False):
+        self.y = random.uniform(-height, 0) if initial else random.uniform(-height / 2, 0)
+        self.speed = random.uniform(0.3, 1.0)
+        self.length = random.randint(5, max(6, height // 2))
+
+    def step(self, height):
+        self.y += self.speed
+        if self.y - self.length > height:
+            self.reset(height)
+
+
+def safe_addstr(win, y, x, text, attr=0):
+    # Writing to the bottom-right cell raises in curses; ignore it.
+    try:
+        win.addstr(y, x, text, attr)
+    except curses.error:
+        pass
+
+
+def run(stdscr, proc, flags):
+    curses.curs_set(0)
+    stdscr.nodelay(True)
+    curses.start_color()
+    curses.use_default_colors()
+    curses.init_pair(1, curses.COLOR_GREEN, -1)  # trail
+    curses.init_pair(2, curses.COLOR_WHITE, -1)  # head
+    curses.init_pair(3, curses.COLOR_RED, -1)  # caffeinate stopped
+    curses.init_pair(4, curses.COLOR_BLACK, curses.COLOR_GREEN)  # status bar
+    curses.init_pair(5, curses.COLOR_WHITE, curses.COLOR_RED)  # status bar, stopped
+
+    started = time.monotonic()
+    height, width = stdscr.getmaxyx()
+    # Use every other column: the half-width katakana look better spaced out.
+    drops = {x: Drop(height) for x in range(0, width, 2)}
+    grid = {}  # (y, x) -> char, so trails keep their characters as they fall
+    stopped_at = None
+
+    while True:
+        key = stdscr.getch()
+        if key in (ord("q"), ord("Q"), 27):
+            return None
+        if key == curses.KEY_RESIZE:
+            height, width = stdscr.getmaxyx()
+            drops = {x: Drop(height) for x in range(0, width, 2)}
+            grid.clear()
+            stdscr.clear()
+
+        if stopped_at is None and proc.poll() is not None:
+            stopped_at = time.monotonic()
+
+        rain_height = height - 1  # last row is the status bar
+        stdscr.erase()
+
+        if stopped_at is None:
+            for x, drop in drops.items():
+                drop.step(rain_height)
+                head = int(drop.y)
+                for i in range(drop.length):
+                    y = head - i
+                    if 0 <= y < rain_height:
+                        # Occasionally flicker a character in the trail.
+                        if (y, x) not in grid or random.random() < 0.02:
+                            grid[(y, x)] = random.choice(CHARS)
+                        if i == 0:
+                            attr = curses.color_pair(2) | curses.A_BOLD
+                        elif i < drop.length // 3:
+                            attr = curses.color_pair(1) | curses.A_BOLD
+                        else:
+                            attr = curses.color_pair(1) | curses.A_DIM
+                        safe_addstr(stdscr, y, x, grid[(y, x)], attr)
+                # Forget characters that have scrolled off the top of the trail.
+                grid.pop((head - drop.length, x), None)
+        else:
+            # Frozen red rain: caffeinate is no longer running.
+            for (y, x), ch in grid.items():
+                if y < rain_height and x < width:
+                    safe_addstr(stdscr, y, x, ch, curses.color_pair(3) | curses.A_DIM)
+            msg = f" caffeinate exited (code {proc.returncode}) - your Mac may now sleep "
+            safe_addstr(
+                stdscr,
+                rain_height // 2,
+                max(0, (width - len(msg)) // 2),
+                msg[:width],
+                curses.color_pair(5) | curses.A_BOLD,
+            )
+
+        if stopped_at is None:
+            status = (
+                f" caffeinate {' '.join(flags)} | ACTIVE | pid {proc.pid}"
+                f" | up {format_uptime(time.monotonic() - started)} | q to quit "
+            )
+            bar_attr = curses.color_pair(4) | curses.A_BOLD
+        else:
+            status = (
+                f" caffeinate {' '.join(flags)} | STOPPED"
+                f" | ran {format_uptime(stopped_at - started)} | q to quit "
+            )
+            bar_attr = curses.color_pair(5) | curses.A_BOLD
+        safe_addstr(stdscr, height - 1, 0, status.ljust(width)[: width - 1], bar_attr)
+
+        stdscr.refresh()
+        time.sleep(1 / FPS)
+
+
+def main():
+    flags = sys.argv[1:] or DEFAULT_FLAGS
+    if any(f in ("-h", "--help") for f in flags):
+        print(__doc__.strip())
+        return 0
+    if not sys.stdout.isatty():
+        print("caffeinate-matrix needs an interactive terminal.", file=sys.stderr)
+        return 1
+
+    locale.setlocale(locale.LC_ALL, "")
+    proc = start_caffeinate(flags)
+    try:
+        curses.wrapper(run, proc, flags)
+    except KeyboardInterrupt:
+        pass
+    finally:
+        if proc.poll() is None:
+            proc.terminate()
+            try:
+                proc.wait(timeout=2)
+            except subprocess.TimeoutExpired:
+                proc.kill()
+    print("caffeinate stopped.")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
