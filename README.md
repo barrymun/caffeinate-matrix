@@ -30,3 +30,13 @@ moving screen really does mean caffeinate is running.
 - To run it from anywhere, symlink it into a directory on your `PATH` that you
   own, e.g. `ln -s "$PWD/caffeinate-matrix" ~/.local/bin/caffeinate-matrix`
   (`/usr/local/bin` works too, but needs `sudo`).
+
+## Credits
+
+The rain effect was inspired by the
+[Matrix effect script](https://github.com/zero-to-mastery/ascii-art/blob/master/ascii-art-matrix-effect.py)
+in zero-to-mastery's [ascii-art](https://github.com/zero-to-mastery/ascii-art) repo.
+
+## License
+
+[MIT](LICENSE)
