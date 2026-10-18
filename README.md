@@ -10,6 +10,35 @@ tell at a glance that your Mac is being kept awake.
 
 Press `q`, `Esc` or `Ctrl-C` to quit. Quitting also stops caffeinate.
 
+## Running it from anywhere
+
+Symlink the script into a directory on your `PATH`. From inside the cloned repo:
+
+```bash
+mkdir -p ~/.local/bin
+ln -s "$PWD/caffeinate-matrix" ~/.local/bin/caffeinate-matrix
+```
+
+You can then run `caffeinate-matrix` from any directory (open a new terminal tab,
+or run `rehash` in zsh, if it isn't found straight away).
+
+If `~/.local/bin` isn't on your `PATH`, add this line to your `~/.zshrc`:
+
+```bash
+export PATH="$HOME/.local/bin:$PATH"
+```
+
+To uninstall, remove the link:
+
+```bash
+rm ~/.local/bin/caffeinate-matrix
+```
+
+- `/usr/local/bin` also works, but needs `sudo`.
+- Because it's a symlink, changes to the repo take effect immediately, and
+  `git pull` keeps it up to date. If you move or rename the repo folder,
+  remove the link and create it again.
+
 ## What you see
 
 - **Green rain + green status bar** (`ACTIVE`, pid, uptime): caffeinate is running.
@@ -27,9 +56,6 @@ moving screen really does mean caffeinate is running.
   caffeinate is left running.
 - `-s` (prevent system sleep) only takes effect on AC power. That's how
   caffeinate itself works.
-- To run it from anywhere, symlink it into a directory on your `PATH` that you
-  own, e.g. `ln -s "$PWD/caffeinate-matrix" ~/.local/bin/caffeinate-matrix`
-  (`/usr/local/bin` works too, but needs `sudo`).
 
 ## Credits
 
