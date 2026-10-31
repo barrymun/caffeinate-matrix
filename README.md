@@ -5,6 +5,8 @@
 Runs `caffeinate -ds` with Matrix-style digital rain in the terminal, so you can
 tell at a glance that your Mac is being kept awake.
 
+![caffeinate-matrix running: green Matrix rain with an ACTIVE status bar, then a red STOPPED screen once caffeinate exits](assets/demo.gif)
+
 ```bash
 ./caffeinate-matrix          # same as: caffeinate -ds
 ./caffeinate-matrix -dims    # any caffeinate flags are passed straight through
@@ -115,6 +117,26 @@ Fix what Ruff can fix automatically, then reformat:
 ```bash
 ruff check --fix . && ruff format .
 ```
+
+## Updating the preview
+
+The GIF at the top is recorded with [VHS](https://github.com/charmbracelet/vhs)
+from the script in `assets/demo.tape`. To re-record it after changing the
+script, install VHS:
+
+```bash
+brew install vhs
+```
+
+Then, from the repo root:
+
+```bash
+vhs assets/demo.tape
+```
+
+Recording runs caffeinate for about 10 seconds. The demo only stops the
+caffeinate it started itself, so any other caffeinate-matrix you have running
+is left alone.
 
 ## Credits
 

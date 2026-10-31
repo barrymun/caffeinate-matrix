@@ -146,7 +146,9 @@ def run(stdscr, proc, flags):
                 f" caffeinate {' '.join(flags)} | ACTIVE | pid {proc.pid}"
                 f" | up {format_uptime(time.monotonic() - started)} | q to quit "
             )
-            bar_attr = curses.color_pair(4) | curses.A_BOLD
+            # No bold: many terminals draw bold black as grey, which is hard to
+            # read on green.
+            bar_attr = curses.color_pair(4)
         else:
             status = (
                 f" caffeinate {' '.join(flags)} | STOPPED"
