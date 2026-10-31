@@ -1,0 +1,7 @@
+# Lint and format settings for Ruff (https://docs.astral.sh/ruff/).
+
+# The script has no .py extension, so Ruff won't find it on its own.
+extend-include = ["caffeinate-matrix"]
+
+# Match the oldest Python we support: the macOS system python3.
+target-version = "py39"

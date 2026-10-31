@@ -1,6 +1,6 @@
 # caffeinate-matrix
 
-[![tests](https://github.com/barrymun/caffeinate-matrix/actions/workflows/tests.yml/badge.svg)](https://github.com/barrymun/caffeinate-matrix/actions/workflows/tests.yml)
+[![CI](https://github.com/barrymun/caffeinate-matrix/actions/workflows/tests.yml/badge.svg)](https://github.com/barrymun/caffeinate-matrix/actions/workflows/tests.yml)
 
 Runs `caffeinate -ds` with Matrix-style digital rain in the terminal, so you can
 tell at a glance that your Mac is being kept awake.
@@ -73,7 +73,48 @@ python3 -m unittest discover -s tests -v
   red `STOPPED` screen, and that no caffeinate is left behind. These tests only
   run on macOS and keep your Mac awake for a few seconds while they run.
 
-GitHub Actions runs the full suite on macOS on every push and pull request.
+To run only the unit tests (instant, and they never start caffeinate):
+
+```bash
+python3 -m unittest discover -s tests -p 'test_unit.py' -v
+```
+
+To run only the tests whose names match a word, e.g. `quit`:
+
+```bash
+python3 -m unittest discover -s tests -v -k quit
+```
+
+GitHub Actions runs the full suite on macOS on every push and pull request,
+with both the macOS system Python and the latest Python.
+
+## Linting
+
+CI also checks the code with [Ruff](https://docs.astral.sh/ruff/), using the
+settings in `ruff.toml`. Ruff isn't needed to run or test the script.
+
+To run the same checks locally, install the Ruff version CI uses (pinned in
+`.github/workflows/tests.yml`, so your results match CI):
+
+```bash
+brew install pipx
+```
+
+```bash
+pipx install ruff==0.17.3
+```
+
+Check for lint problems and formatting differences:
+
+```bash
+ruff check . && ruff format --check .
+```
+
+Fix what Ruff can fix automatically, then reformat:
+
+```bash
+ruff check --fix . && ruff format .
+```
 
 ## Credits
 

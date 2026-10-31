@@ -33,7 +33,9 @@ class ScriptInPty:
         self.pid, self.fd = pty.fork()
         if self.pid == 0:  # child
             fcntl.ioctl(0, termios.TIOCSWINSZ, struct.pack("HHHH", ROWS, COLS, 0, 0))
-            env = dict(os.environ, TERM="xterm-256color", LC_ALL="en_US.UTF-8", ESCDELAY="25")
+            env = dict(
+                os.environ, TERM="xterm-256color", LC_ALL="en_US.UTF-8", ESCDELAY="25"
+            )
             os.execve(sys.executable, [sys.executable, str(SCRIPT), *args], env)
 
     def read_for(self, seconds):
@@ -84,7 +86,10 @@ class ScriptInPty:
 def caffeinate_pids_for(pid):
     """PIDs of caffeinate processes tied to `pid` with -w."""
     result = subprocess.run(
-        ["pgrep", "-f", f"^caffeinate .*-w {pid}$"], capture_output=True, text=True
+        ["pgrep", "-f", f"^caffeinate .*-w {pid}$"],
+        check=False,
+        capture_output=True,
+        text=True,
     )
     return [int(p) for p in result.stdout.split()]
 
@@ -120,7 +125,7 @@ class EndToEndTest(unittest.TestCase):
     def test_mac_is_actually_kept_awake(self):
         script = self.start()
         assertions = subprocess.run(
-            ["pmset", "-g", "assertions"], capture_output=True, text=True
+            ["pmset", "-g", "assertions"], check=False, capture_output=True, text=True
         ).stdout
         self.assertIn(f"on behalf of Process ID {script.pid}", assertions)
 
@@ -128,12 +133,19 @@ class EndToEndTest(unittest.TestCase):
         script = self.start("-i")
         result = subprocess.run(
             ["ps", "-o", "args=", "-p", str(caffeinate_pids_for(script.pid)[0])],
-            capture_output=True, text=True,
+            check=False,
+            capture_output=True,
+            text=True,
         )
         self.assertEqual(result.stdout.strip(), f"caffeinate -i -w {script.pid}")
 
     def test_quit_keys_exit_cleanly_and_stop_caffeinate(self):
-        for name, key in [("q", b"q"), ("Q", b"Q"), ("Esc", b"\x1b"), ("Ctrl-C", b"\x03")]:
+        for name, key in [
+            ("q", b"q"),
+            ("Q", b"Q"),
+            ("Esc", b"\x1b"),
+            ("Ctrl-C", b"\x03"),
+        ]:
             with self.subTest(key=name):
                 script = self.start()
                 script.send(key)
@@ -144,7 +156,9 @@ class EndToEndTest(unittest.TestCase):
     def test_screen_turns_red_when_caffeinate_dies(self):
         script = self.start()
         os.kill(caffeinate_pids_for(script.pid)[0], signal.SIGTERM)
-        self.assertTrue(script.read_until(b"STOPPED"), "status bar never showed STOPPED")
+        self.assertTrue(
+            script.read_until(b"STOPPED"), "status bar never showed STOPPED"
+        )
         self.assertTrue(script.read_until(b"caffeinate exited"))
         # The script keeps showing the red screen until you quit.
         script.send(b"q")
@@ -154,13 +168,19 @@ class EndToEndTest(unittest.TestCase):
         script = self.start()
         os.kill(script.pid, signal.SIGKILL)
         self.assertEqual(script.wait(), -signal.SIGKILL)
-        self.assertTrue(wait_for_no_caffeinate(script.pid), "caffeinate outlived the script")
+        self.assertTrue(
+            wait_for_no_caffeinate(script.pid), "caffeinate outlived the script"
+        )
 
 
 class NoTerminalTest(unittest.TestCase):
     def test_refuses_to_run_when_output_is_not_a_terminal(self):
         result = subprocess.run(
-            [sys.executable, str(SCRIPT)], capture_output=True, text=True, timeout=10
+            [sys.executable, str(SCRIPT)],
+            check=False,
+            capture_output=True,
+            text=True,
+            timeout=10,
         )
         self.assertEqual(result.returncode, 1)
         self.assertIn("needs an interactive terminal", result.stderr)

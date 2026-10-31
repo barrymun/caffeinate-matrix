@@ -76,12 +76,16 @@ class MainTest(unittest.TestCase):
     def run_main(self, argv, proc=None, wrapper_error=None, stdout=None):
         proc = proc or mock.Mock(**{"poll.return_value": None})
         stdout = stdout if stdout is not None else TTYOutput()
-        with mock.patch.object(cm.sys, "argv", ["caffeinate-matrix", *argv]), \
-                mock.patch.object(cm.sys, "stdout", stdout), \
-                mock.patch.object(cm.sys, "stderr", io.StringIO()) as stderr, \
-                mock.patch.object(cm.locale, "setlocale"), \
-                mock.patch.object(cm, "start_caffeinate", return_value=proc) as start, \
-                mock.patch.object(cm.curses, "wrapper", side_effect=wrapper_error) as wrapper:
+        with (
+            mock.patch.object(cm.sys, "argv", ["caffeinate-matrix", *argv]),
+            mock.patch.object(cm.sys, "stdout", stdout),
+            mock.patch.object(cm.sys, "stderr", io.StringIO()) as stderr,
+            mock.patch.object(cm.locale, "setlocale"),
+            mock.patch.object(cm, "start_caffeinate", return_value=proc) as start,
+            mock.patch.object(
+                cm.curses, "wrapper", side_effect=wrapper_error
+            ) as wrapper,
+        ):
             code = cm.main()
         return code, start, wrapper, proc, stdout.getvalue(), stderr.getvalue()
 

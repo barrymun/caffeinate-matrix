@@ -52,7 +52,9 @@ class Drop:
         self.reset(height, initial=True)
 
     def reset(self, height, initial=False):
-        self.y = random.uniform(-height, 0) if initial else random.uniform(-height / 2, 0)
+        self.y = (
+            random.uniform(-height, 0) if initial else random.uniform(-height / 2, 0)
+        )
         self.speed = random.uniform(0.3, 1.0)
         self.length = random.randint(5, max(6, height // 2))
 
@@ -91,7 +93,7 @@ def run(stdscr, proc, flags):
     while True:
         key = stdscr.getch()
         if key in (ord("q"), ord("Q"), 27):
-            return None
+            return
         if key == curses.KEY_RESIZE:
             height, width = stdscr.getmaxyx()
             drops = {x: Drop(height) for x in range(0, width, 2)}
@@ -128,7 +130,9 @@ def run(stdscr, proc, flags):
             for (y, x), ch in grid.items():
                 if y < rain_height and x < width:
                     safe_addstr(stdscr, y, x, ch, curses.color_pair(3) | curses.A_DIM)
-            msg = f" caffeinate exited (code {proc.returncode}) - your Mac may now sleep "
+            msg = (
+                f" caffeinate exited (code {proc.returncode}) - your Mac may now sleep "
+            )
             safe_addstr(
                 stdscr,
                 rain_height // 2,
