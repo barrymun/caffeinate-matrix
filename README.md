@@ -1,5 +1,7 @@
 # caffeinate-matrix
 
+[![tests](https://github.com/barrymun/caffeinate-matrix/actions/workflows/tests.yml/badge.svg)](https://github.com/barrymun/caffeinate-matrix/actions/workflows/tests.yml)
+
 Runs `caffeinate -ds` with Matrix-style digital rain in the terminal, so you can
 tell at a glance that your Mac is being kept awake.
 
@@ -56,6 +58,22 @@ moving screen really does mean caffeinate is running.
   caffeinate is left running.
 - `-s` (prevent system sleep) only takes effect on AC power. That's how
   caffeinate itself works.
+
+## Testing
+
+The tests use only the standard library. From the repo root:
+
+```bash
+python3 -m unittest discover -s tests -v
+```
+
+- `tests/test_unit.py` covers the script's logic without starting caffeinate.
+- `tests/test_end_to_end.py` runs the real script in a pseudo-terminal: it checks
+  the rain and status bar, that the Mac is really kept awake, the quit keys, the
+  red `STOPPED` screen, and that no caffeinate is left behind. These tests only
+  run on macOS and keep your Mac awake for a few seconds while they run.
+
+GitHub Actions runs the full suite on macOS on every push and pull request.
 
 ## Credits
 

@@ -1,0 +1,22 @@
+name: tests
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    # The end-to-end tests drive the real caffeinate, so they need macOS.
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Test with the macOS system Python
+        run: /usr/bin/python3 --version && /usr/bin/python3 -m unittest discover -s tests -v
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - name: Test with the latest Python
+        run: python --version && python -m unittest discover -s tests -v
